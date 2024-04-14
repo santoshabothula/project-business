@@ -1,0 +1,73 @@
+version: '3'
+services:
+    business-db:
+        container_name: business-db
+        image: postgres:latest
+        ports:
+            - 5432:5432
+        environment:
+            POSTGRES_DB: postgres
+            POSTGRES_HOST_AUTH_METHOD: trust
+        networks:
+            - business-network
+    registry-service:
+        container_name: registry-service
+        build:
+            context: registry-service
+            dockerfile: Dockerfile
+        image: registry-service:latest
+        ports:
+            - 8761:8761
+        networks:
+            - business-network
+    gateway-service:
+        container_name: gateway-service
+        build:
+            context: gateway-service
+            dockerfile: Dockerfile
+        image: gateway-service:latest
+        ports:
+            - 8080:8080
+        environment:
+            EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka/
+        networks:
+            - business-network
+        depends_on:
+            - registry-service
+    user-service:
+        container_name: user-service
+        build:
+            context: user-service
+            dockerfile: Dockerfile
+        image: user-service:latest
+        ports:
+            - 8081:8081
+        environment:
+            SPRING_DATASOURCE_URL: jdbc:postgresql://business-db:5432/postgres
+            SPRING_DATASOURCE_USERNAME: postgres
+            SPRING_DATASOURCE_PASSWORD: 123456
+            EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka/
+        networks:
+            - business-network
+        depends_on:
+            - registry-service
+            - gateway-service
+    wedlock-web-ui:
+        container_name: wedlock-web-ui-service
+        build:
+            context: wedlock-web-ui
+            dockerfile: Dockerfile
+        image: wedlock-web-ui-service:latest
+        ports:
+            - 3000:3000
+        environment:
+            REACT_APP_API_BASE_URL: http://localhost:8080
+        networks:
+            - business-network
+        depends_on:
+            - registry-service
+            - gateway-service
+            - user-service
+networks:
+    business-network:
+        driver: bridge

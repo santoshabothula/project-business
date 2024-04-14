@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders:
+              - "*"
+#            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user-svc/**
+          filters:
+            - AuthenticationFilter
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+eureka:
+  client:
+    enabled: true
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone : http://localhost:8761/eureka/
+
+apis:
+  user-svc:
+    validate: /user-svc/user/validate
+
